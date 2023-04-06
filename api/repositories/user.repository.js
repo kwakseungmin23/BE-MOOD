@@ -15,7 +15,7 @@ class UserRepository {
     await UserInfos.create({
       userId: makeUser.userId,
     });
-    return;
+    return makeUser;
   };
 
   findUser = async (userId) => {
@@ -92,16 +92,31 @@ class UserRepository {
     return scrapList;
   };
 
-  findMusic = async (musicId) => {
+  findMusic = async (musicId, page) => {
     const musicList = await Musics.findAll({
       where: { musicId },
-      attributes: ["musicTitle", "composer", "musicUrl", "musicId", "fileName"],
+      attributes: [
+        "musicTitle",
+        "musicContent",
+        "composer",
+        "musicUrl",
+        "musicId",
+      ],
+      limit: 10,
+      offset: (page - 1) * 10,
+      order: [["musicId", "DESC"]],
     });
-    return musicList;
+    const musicCount = await Musics.count({ where: { musicId } });
+    return { musicList, musicCount };
   };
 
   uploadProfile = async (userId, fileName) => {
     await UserInfos.update({ profileUrl: fileName }, { where: { userId } });
+    return;
+  };
+
+  changeNickname = async (userId, nickname) => {
+    await Users.update({ nickname }, { where: { userId } });
     return;
   };
 
@@ -120,7 +135,7 @@ class UserRepository {
       attributes: [
         "reCommentId",
         "reviewId",
-        "comment",
+        ["comment", "review"],
         "createdAt",
         [sequelize.col("Review.musicId"), "musicId"],
       ],

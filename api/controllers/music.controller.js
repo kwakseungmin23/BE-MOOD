@@ -10,20 +10,15 @@ class MusicController {
     try {
       let file = req.files[0];
       let data = await this.musicRepository.s3Upload(file);
-      let Url = data.Location;
-      let fileN = data.Key;
-      let { musicTitle, musicContent, status, composer, tag, condition } =
-        req.body;
-      let music = await this.musicRepository.create({
+      let fileName = data.Key;
+      let { musicTitle, musicContent, status, composer, tag } = req.body;
+      let music = await this.musicService.create({
         musicTitle,
         musicContent,
         status,
         composer,
         tag,
-        userId: 1,
-        musicUrl: Url,
-        fileName: fileN,
-        condition,
+        fileName,
       });
       return res.status(200).json({ music, msg: "생성 완료" });
     } catch (err) {
@@ -55,16 +50,21 @@ class MusicController {
   };
   findAllByCoOrdinates = async (req, res, next) => {
     try {
-      const mood = await this.musicService.mood(req.params);
-      return res.status(200).json({ data: mood });
+      const { x, y } = req.params;
+      const mood = await this.musicService.mood({ x, y });
+      return res
+        .status(200)
+        .json({ message: mood.message, music: mood.musicData });
     } catch (err) {
       next(err);
     }
   };
   findByKeyword = async (req, res, next) => {
     try {
+      const { userId } = res.locals.user;
       const { keyword } = req.query;
       const project = await this.musicService.findByKeyword({
+        userId,
         keyword,
       });
       return res.status(200).json({ data: project });
@@ -104,6 +104,16 @@ class MusicController {
 
       await this.musicService.sendStreaming(userId, musicId);
       res.status(201).json({ message: "스트리밍수 증가" });
+    } catch (error) {
+      next(error);
+    }
+  };
+  tagMusicId = async (req, res, next) => {
+    try {
+      const { musicId } = req.params;
+      const { tag } = req.body;
+      await this.musicRepository.tagMusicId({ musicId, tag });
+      res.status(201).json({ message: "태그 변경" });
     } catch (error) {
       next(error);
     }

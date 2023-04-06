@@ -2,6 +2,8 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const express = require("express");
 const http = require("http");
+// const cookieParser = require("cookie-parser");
+const helmet = require("helmet");
 const createSocket = require("./socket");
 const router = require("./api/routes");
 
@@ -17,6 +19,24 @@ app.use(
 );
 
 app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'"],
+        imgSrc: ["'self'"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+      },
+    },
+    xContentTypeOptions: true,
+    xFrameOptions: "DENY",
+    referrerPolicy: "same-origin",
+  })
+);
+
+app.use(
   cors({
     methods: ["GET", "POST", "UPDATE", "DELETE", "PUT", "PATCH"],
     origin: true,
@@ -24,13 +44,14 @@ app.use(
   })
 );
 
+// app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.use("/api", router);
 
 app.use((error, req, res, next) => {
-  logger.error(error);
+  console.error(error);
   return res
     .status(error.code || 500)
     .json({ message: error.message || "서버 에러." });

@@ -26,8 +26,13 @@ class UserService {
     }
 
     const hashedPw = await bcrypt.hash(password, 10);
-    await this.userRepository.signUp(id, hashedPw, email, nickname);
-    return;
+    const user = await this.userRepository.signUp(
+      id,
+      hashedPw,
+      email,
+      nickname
+    );
+    return user;
   };
 
   login = async (id, password) => {
@@ -42,7 +47,20 @@ class UserService {
         code: 400,
       });
     }
-    return login;
+
+    const accessToken = jwt.sign(
+      { userId: login.userId },
+      process.env.ACCESS_SECRET_KEY,
+      {
+        expiresIn: "1h",
+      }
+    );
+    const refreshToken = jwt.sign(
+      { userId: login.userId },
+      process.env.REFRESH_SECRET_KEY,
+      { expiresIn: "1d" }
+    );
+    return { nickname: login.nickname, accessToken, refreshToken };
   };
 
   idCheck = async (id) => {
@@ -170,38 +188,55 @@ class UserService {
 
   userInfo = async (userId) => {
     const userInfo = await this.userRepository.userInfo(userId);
-    if (!userInfo.profileUrl) {
-      userInfo.profileUrl = null;
-    } else {
-      if (userInfo.profileUrl.includes("kakaocdn") === true) {
-        userInfo.profileUrl = userInfo.profileUrl;
-      } else {
-        userInfo.profileUrl =
-          "https://d13uh5mnneeyhq.cloudfront.net/" + userInfo.profileUrl;
-      }
-    }
 
     return userInfo;
   };
 
-  likeList = async (userId) => {
+  likeList = async (userId, page) => {
     const likeList = await this.userRepository.likeList(userId);
     const musicId = [];
     for (let i = 0; i < likeList.length; i++) {
       musicId.push(likeList[i].musicId);
     }
-    const musicList = await this.userRepository.findMusic(musicId);
-    return await cloudfrontfor(musicList);
+    const musicList = await this.userRepository.findMusic(musicId, page);
+    await cloudfrontfor(musicList.musicList);
+    return {
+      musicList: musicList.musicList,
+      musicCount: musicList.musicCount,
+    };
   };
 
-  scrapList = async (userId) => {
+  scrapList = async (userId, page) => {
     const scrapList = await this.userRepository.scrapList(userId);
     const musicId = [];
     for (let i = 0; i < scrapList.length; i++) {
       musicId.push(scrapList[i].musicId);
     }
-    const musicList = await this.userRepository.findMusic(musicId);
-    return await cloudfrontfor(musicList);
+    const musicList = await this.userRepository.findMusic(musicId, page);
+    await cloudfrontfor(musicList.musicList);
+    return {
+      musicList: musicList.musicList,
+      musicCount: musicList.musicCount,
+    };
+  };
+  reviewList = async (userId, page) => {
+    const reviewData = await this.userRepository.findReview(userId);
+    const recommentData = await this.userRepository.findRecomment(userId);
+
+    const combinedData = reviewData.concat(recommentData);
+
+    combinedData.sort((a, b) => {
+      b.createdAt - a.createdAt;
+    });
+
+    const itemsPerPage = 10;
+    const currentPage = page;
+
+    const paginatedData = combinedData.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+    return { data: paginatedData, count: combinedData.length };
   };
 
   uploadImage = async (file) => {
@@ -218,15 +253,6 @@ class UserService {
     return;
   };
 
-  reviewList = async (userId) => {
-    const reviewData = await this.userRepository.findReview(userId);
-    return reviewData;
-  };
-  recommentList = async (userId) => {
-    const recommentData = await this.userRepository.findRecomment(userId);
-    return recommentData;
-  };
-
   deleteUser = async (userId) => {
     await this.userRepository.deleteUser(userId);
     return;
@@ -235,6 +261,15 @@ class UserService {
   findUser = async (userId) => {
     const user = await this.userRepository.findUser(userId);
     return user;
+  };
+
+  changeNickname = async (userId, nickname) => {
+    const user = await this.userRepository.findUser(userId);
+    if (user.nickname === nickname) {
+      throw makeError({ message: "현재 닉네임과 같습니다.", code: 400 });
+    }
+    await this.userRepository.changeNickname(userId, nickname);
+    return;
   };
 }
 
