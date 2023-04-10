@@ -1,11 +1,3 @@
-const {
-  Musics,
-  Composers,
-  Likes,
-  Streamings,
-  Tags,
-  MusicTags,
-} = require("../../db/models");
 const { makeError } = require("../error");
 const { S3 } = require("aws-sdk");
 const Sequelize = require("sequelize");
@@ -13,9 +5,23 @@ const { Op } = require("sequelize");
 const redisClient = require("../../db/config/redisClient");
 
 class MusicRepository {
-  constructor() {}
+  constructor(
+    musicModel,
+    composerModel,
+    likeModel,
+    streamingModel,
+    tagModel,
+    musicTagModel
+  ) {
+    this.musicModel = musicModel;
+    this.composerModel = composerModel;
+    this.likeModel = likeModel;
+    this.streamingModel = streamingModel;
+    this.tagModel = tagModel;
+    this.musicTagModel = musicTagModel;
+  }
   create = async ({ musicTitle, musicContent, status, composer, musicUrl }) => {
-    let music = await Musics.create({
+    let music = await this.musicModel.create({
       musicTitle,
       musicContent,
       status,
@@ -25,7 +31,7 @@ class MusicRepository {
     return music;
   };
   createTag = async ({ musicId, tag }) => {
-    const tags = await Tags.findOrCreate({
+    const tags = await this.tagModel.findOrCreate({
       where: { tagName: tag.trim() },
     });
     await MusicTags.create({
@@ -34,7 +40,7 @@ class MusicRepository {
     });
   };
   findOneByMusicId = async ({ musicId }) => {
-    let music = await Musics.findOne({
+    let music = await this.musicModel.findOne({
       where: { musicId },
       attributes: [
         "musicTitle",
@@ -47,10 +53,10 @@ class MusicRepository {
     return music;
   };
   findAllByComposer = async ({ composer }) => {
-    let composerInfo = await Composers.findAll({
+    let composerInfo = await this.composerModel.findAll({
       where: composer,
     });
-    let music = await Musics.findAll({
+    let music = await this.musicModel.findAll({
       where: { composer: composer.composer.split(" ").slice(-1) },
     });
     return { composerInfo, music };
@@ -66,7 +72,7 @@ class MusicRepository {
   };
 
   findOneByStatus = async (status) => {
-    const mood = await Musics.findOne({
+    const mood = await this.musicModel.findOne({
       order: Sequelize.literal("rand()"),
       where: { status },
       // include: [
@@ -82,7 +88,7 @@ class MusicRepository {
   };
 
   findByKeyword = async ({ keyword }) => {
-    const composerInfo = await Composers.findOne({
+    const composerInfo = await this.composerModel.findOne({
       where: {
         [Op.or]: [{ composer: keyword }, { tag: { [Op.substring]: keyword } }],
       },
@@ -91,7 +97,7 @@ class MusicRepository {
     if (composerInfo) {
       composerName = composerInfo.composer.split(" ");
     }
-    const composerSong = await Musics.findAll({
+    const composerSong = await this.musicModel.findAll({
       where: {
         composer: composerName.slice(-1),
       },
@@ -105,7 +111,7 @@ class MusicRepository {
       ],
     });
 
-    const musicTitle = await Musics.findAll({
+    const musicTitle = await this.musicModel.findAll({
       include: [
         {
           model: MusicTags,
@@ -137,7 +143,7 @@ class MusicRepository {
   };
 
   likeChart = async () => {
-    const likeChart = await Musics.findAll({
+    const likeChart = await this.musicModel.findAll({
       attributes: [
         "musicId",
         "musicTitle",
@@ -161,7 +167,7 @@ class MusicRepository {
   };
 
   streamingChart = async () => {
-    const scrapChart = await Musics.findAll({
+    const scrapChart = await this.musicModel.findAll({
       attributes: [
         "musicId",
         "musicTitle",
@@ -188,17 +194,17 @@ class MusicRepository {
   };
 
   sendStreaming = async (userId, musicId) => {
-    const streaming = await Streamings.create({ userId, musicId });
+    const streaming = await this.streamingModel.create({ userId, musicId });
     return streaming;
   };
 
   tagMusicId = async ({ musicId, tag }) => {
     const tagList = tag.split(",");
     for (const tag of tagList) {
-      const tags = await Tags.findOrCreate({
+      const tags = await this.tagModel.findOrCreate({
         where: { tagName: tag.trim() },
       });
-      const musicTags = await MusicTags.create({
+      const musicTags = await this.musicTagModel.create({
         musicId: musicId,
         tagId: tags[0].tagId,
       });

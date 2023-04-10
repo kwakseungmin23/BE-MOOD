@@ -1,10 +1,10 @@
-const { Composers } = require("../../db/models/");
-
 class ComposerRepository {
-  constructor() {}
+  constructor(composerModel) {
+    this.composerModel = composerModel;
+  }
   //작곡가 조회하기
   getComposer = async ({ composer }) => {
-    const result = await Composers.findOne({
+    const result = await this.composerModel.findOne({
       where: { composer },
     });
     return result;
@@ -12,7 +12,7 @@ class ComposerRepository {
 
   //작곡가 수정하기
   updateTagComposer = async ({ composer, tag }) => {
-    await Composers.update({ tag }, { where: { composer } });
+    await this.composerModel.update({ tag }, { where: { composer } });
     return;
   };
 }
