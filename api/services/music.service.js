@@ -1,21 +1,31 @@
-const musicRepository = require("../repositories/music.repository");
+const MusicRepository = require("../repositories/music.repository");
 const LikeRepository = require("../repositories/like.repository");
 const ScrapRepository = require("../repositories/scrap.repository");
 const UserRepository = require("../repositories/user.repository");
 const ComposerRepository = require("../repositories/composer.repository");
 const { makeError } = require("../error");
 const {
-  cloudfront,
-  cloudfrontfor,
-} = require("../middlewares/cloudfront.middleware");
+  Musics,
+  Composers,
+  Likes,
+  Streamings,
+  Tags,
+  MusicTags,
+  Scraps,
+} = require("../../db/models");
+
 class MusicService {
-  constructor() {
-    this.musicRepository = new musicRepository();
-  }
-  likeRepository = new LikeRepository();
-  scrapRepository = new ScrapRepository();
-  composerRepository = new ComposerRepository();
-  userRepository = new UserRepository();
+  musicRepository = new MusicRepository(
+    Musics,
+    Composers,
+    Likes,
+    Streamings,
+    Tags,
+    MusicTags
+  );
+  likeRepository = new LikeRepository(Likes);
+  scrapRepository = new ScrapRepository(Scraps);
+  composerRepository = new ComposerRepository(Composers);
 
   create = async ({
     musicTitle,
@@ -26,7 +36,7 @@ class MusicService {
     fileName,
   }) => {
     const musicUrl = "https://d13uh5mnneeyhq.cloudfront.net/" + fileName;
-    const music = await this.musicRepository.create({
+    const music = await musicRepository.create({
       musicTitle,
       musicContent,
       status,
@@ -36,7 +46,7 @@ class MusicService {
     const musicId = music.musicId;
     const tagList = tag.split(",");
     for (const tag of tagList) {
-      await this.musicRepository.createTag({ musicId, tag });
+      await musicRepository.createTag({ musicId, tag });
     }
     return music;
   };

@@ -1,16 +1,19 @@
-const { Scraps } = require("../../db/models");
-
 class ScrapRepository {
+  constructor(scrapModel) {
+    this.scrapModel = scrapModel;
+  }
   findScrap = async (userId, musicId) => {
-    const findLike = await Scraps.findOne({ where: { userId, musicId } });
+    const findLike = await this.scrapModel.findOne({
+      where: { userId, musicId },
+    });
     return findLike;
   };
   makeScrap = async (userId, musicId) => {
-    await Scraps.create({ userId, musicId });
+    await this.scrapModel.create({ userId, musicId });
     return;
   };
   deleteScrap = async (userId, musicId) => {
-    await Scraps.destroy({ where: { userId, musicId } });
+    await this.scrapModel.destroy({ where: { userId, musicId } });
     return;
   };
 }
