@@ -3,12 +3,7 @@ const { Users } = require("../../db/models");
 
 module.exports = async (req, res, next) => {
   const { authorization } = req.headers;
-  // console.log("리퀘스트 쿠키", req.cookies);
-  // const authorization = req.cookies.accessToken;
-  // console.log("받아오는 토큰값", authorization);
   const [tokenType, token] = (authorization ?? "").split(" ");
-  // console.log("타입", tokenType);
-  // console.log("토큰", token);
 
   if (tokenType !== "Bearer" || !token) {
     return res.status(401).json({
@@ -33,7 +28,7 @@ module.exports = async (req, res, next) => {
     res.clearCookie("authorization"); // 인증에 실패 할 경우 쿠키 삭제
 
     if (error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({
+      return res.status(419).json({
         message: "엑세스 토큰이 만료되었습니다.",
       });
     } else {

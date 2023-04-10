@@ -1,5 +1,7 @@
 const UserService = require("../services/user.service");
 const jwt = require("jsonwebtoken");
+const createTransporter = require("../../db/config/email");
+const transporter = createTransporter();
 
 class UserController {
   userService = new UserService();
@@ -29,16 +31,6 @@ class UserController {
       const user = await this.userService.login(id, password);
       const { nickname, accessToken, refreshToken } = user;
 
-      // res.cookie("accessToken", `Bearer ${accessToken}`, {
-      //   httpOnly: true,
-      //   secure: process.env.NODE_ENV === "production",
-      //   sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-      // });
-      // res.cookie("refreshToken", `Bearer ${refreshToken}`, {
-      //   httpOnly: true,
-      //   secure: process.env.NODE_ENV === "production",
-      //   sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-      // });
       res.status(200).json({
         message: "로그인에 성공하였습니다.",
         accessToken,
@@ -171,7 +163,8 @@ class UserController {
   deleteUser = async (req, res, next) => {
     try {
       const { userId } = res.locals.user;
-      await this.userService.deleteUser(userId);
+      const { password } = req.body;
+      await this.userService.deleteUser(userId, password);
       res.status(200).json({ message: "회원탈퇴에 성공하였습니다" });
     } catch (error) {
       next(error);
@@ -179,31 +172,19 @@ class UserController {
   };
 
   refresh = async (req, res, next) => {
-    const { refreshToken } = req.body;
+    const { authorization } = req.headers;
+    const [tokenType, token] = (authorization ?? "").split(" ");
 
-    if (!refreshToken) {
-      return res.status(400).json({ message: "리프레시 토큰이 없습니다." });
+    if (tokenType !== "Bearer" || !token) {
+      return res.status(401).json({
+        message:
+          "리프래시 토큰 타입이 일치하지 않거나, 토큰이 존재하지 않습니다.",
+      });
     }
 
     try {
-      const decodedToken = jwt.verify(
-        refreshToken,
-        process.env.REFRESH_SECRET_KEY
-      );
-      const userId = decodedToken.userId;
-
-      const user = await this.userService.findUser(userId);
-      if (!user) {
-        return res
-          .status(401)
-          .json({ message: "토큰에 해당하는 사용자가 존재하지 않습니다." });
-      }
-
-      const newAccessToken = jwt.sign(
-        { userId: userId },
-        process.env.ACCESS_SECRET_KEY,
-        { expiresIn: "1h" }
-      );
+      const userId = await this.userService.findUserIdAndCheckUser(token);
+      const newAccessToken = await this.userService.makeNewAccessToken(userId);
 
       return res.status(200).json({
         message: "새로운 토큰이 발급되었습니다,",
@@ -231,6 +212,35 @@ class UserController {
       res.status(200).json({ message: "닉네임 변경이 완료되었습니다." });
     } catch (error) {
       next(error);
+    }
+  };
+  mailCheck = async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      const password = Math.floor(Math.random() * 1000000); // 6자리 랜덤한 비밀번호 생성
+      let mailOptions = {
+        from: "MoodClassic99@gmail.com", //송신할 이메일
+        to: email, //수신할 이메일
+        subject: "MOOD 확인 코드입니다.",
+        html: `
+         <div>
+             <h2>Mood Code</h2>
+             <div class="phone" style="font-size: 1.1em;">Title : "코드를 Mood 홈페이지에 입력하세요."</div>
+             <div class="message" style="font-size: 1.1em;">message : ${password}</div>
+         </div>
+         `,
+      };
+      await transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+          console.log(error);
+        } else {
+          console.log("Email sent: " + info.response);
+        }
+      });
+      return res.json({ message: "성공적", password: password }); // 비밀번호를 res에 담아 보내줍니다.
+    } catch (err) {
+      console.error(err);
+      next(err);
     }
   };
 }
