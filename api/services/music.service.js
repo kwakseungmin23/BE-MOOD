@@ -1,6 +1,7 @@
 const MusicRepository = require("../repositories/music.repository");
 const LikeRepository = require("../repositories/like.repository");
 const ScrapRepository = require("../repositories/scrap.repository");
+const UserRepository = require("../repositories/user.repository");
 const ComposerRepository = require("../repositories/composer.repository");
 const { makeError } = require("../error");
 const {
@@ -73,10 +74,6 @@ class MusicService {
         music.music[i].musicId
       );
       music.music[i].dataValues.likeStatus = !!like;
-      const likeCount = await this.likeRepository.countLike(
-        music.music[i].musicId
-      );
-      music.music[i].dataValues.likeCount = likeCount;
       const scrap = await this.scrapRepository.findScrap(
         userId,
         music.music[i].musicId
@@ -85,7 +82,7 @@ class MusicService {
     }
     return music;
   };
-  mood = async ({ x, y }) => {
+  mood = async ({ userId, x, y }) => {
     let status;
     let message;
     if (x >= 0 && x <= 25 && y >= 0 && y <= 25) {
@@ -215,14 +212,16 @@ class MusicService {
       status = 4;
       message = "당신은 기쁨을 느끼고 계시네요!";
     }
-
-    const musicData = await this.musicRepository.findOneByStatus(status);
-
-    const composerImage = await this.composerRepository.getComposer({
-      composer: musicData.dataValues.composer,
-    });
-    musicData.dataValues.imageUrl = composerImage.dataValues.imageUrl;
-    return { musicData, message };
+    if (!userId) {
+      const musicData = await this.musicRepository.findOneByStatus(status);
+      return { musicData, message };
+    } else {
+      const musicData = await this.musicRepository.findOneByStatus(status);
+      const date = `${new Date().getMonth() + 1}월${new Date().getDate()}일 `;
+      const newMassage = `${date}` + message;
+      await this.userRepository.updateUserStatus(userId, newMassage);
+      return { musicData, message };
+    }
   };
 
   findByKeyword = async ({ userId, keyword }) => {
@@ -241,8 +240,6 @@ class MusicService {
         const musicId = item.dataValues.musicId;
         const like = await this.likeRepository.findLike(userId, musicId);
         item.dataValues.likeStatus = !!like;
-        const likeCount = await this.likeRepository.countLike(musicId);
-        item.dataValues.likeCount = likeCount;
         const scrap = await this.scrapRepository.findScrap(userId, musicId);
         item.dataValues.scrapStatus = !!scrap;
       }),
@@ -250,8 +247,6 @@ class MusicService {
         const musicId = item.dataValues.musicId;
         const like = await this.likeRepository.findLike(userId, musicId);
         item.dataValues.likeStatus = !!like;
-        const likeCount = await this.likeRepository.countLike(musicId);
-        item.dataValues.likeCount = likeCount;
         const scrap = await this.scrapRepository.findScrap(userId, musicId);
         item.dataValues.scrapStatus = !!scrap;
       })
@@ -279,10 +274,6 @@ class MusicService {
         likeChart.map(async (item) => {
           const Like = await this.likeRepository.findLike(userId, item.musicId);
           item.dataValues.likeStatus = !!Like;
-          const composer = await this.composerRepository.getComposer({
-            composer: item.dataValues.composer,
-          });
-          item.dataValues.imageUrl = composer.dataValues.imageUrl;
         })
       );
 
@@ -293,12 +284,6 @@ class MusicService {
 
   streamingChart = async () => {
     const streamingChart = await this.musicRepository.streamingChart();
-    for (let i = 0; i < streamingChart.length; i++) {
-      const composer = await this.composerRepository.getComposer({
-        composer: streamingChart[i].dataValues.composer,
-      });
-      streamingChart[i].dataValues.imageUrl = composer.dataValues.imageUrl;
-    }
     return streamingChart;
   };
 

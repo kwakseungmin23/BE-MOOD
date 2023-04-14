@@ -1,5 +1,6 @@
 const { Server } = require("socket.io");
-const { Users, Userinfos, Chats } = require("./db/models");
+const { Users, UserInfos, Chats } = require("./db/models");
+const Sequelize = require("sequelize");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
@@ -31,59 +32,70 @@ module.exports = (server) => {
         socket.to(socket.roomId).emit("userList", nicknames);
       });
       socket.on("scroll", async function (index) {
-        if (!socket.roomId) {
-          console.log("룸 요청이 들어오지 않았습니다.");
-          return;
-        }
-        if (index >= 2) {
-          const chats = await Chats.findAll({
-            where: { roomId: socket.roomId },
-            order: [["chatId", "DESC"]],
-            limit: 30,
-            offset: (index - 1) * 30,
-          });
-          const findRoomChats = chats.reverse();
-          return socket.emit("plusScroll", findRoomChats);
-        } else {
-          return;
+        if (socket.roomId) {
+          if (index >= 2) {
+            const chats = await Chats.findAll({
+              where: { roomId: socket.roomId },
+              order: [["chatId", "DESC"]],
+              limit: 30,
+              offset: (index - 1) * 30,
+            });
+            const findRoomChats = chats.reverse();
+            return socket.emit("plusScroll", findRoomChats);
+          } else {
+            return;
+          }
         }
       });
       socket.on("newUser", async (token) => {
         try {
           const decodedToken = jwt.verify(token, process.env.ACCESS_SECRET_KEY);
           const userId = decodedToken.userId;
-          if (!userId) {
-            return socket.emit(
-              "onUser",
-              "message: 토큰에 해당하는 사용자가 존재하지 않습니다."
-            );
-          }
           const user = await Users.findOne({
             where: { userId: userId },
-            include: [{ model: Userinfos, attributes: [profileUrl] }],
+            attributes: [
+              "userId",
+              "nickname",
+              [Sequelize.col("UserInfo.profileUrl"), "profileUrl"],
+            ],
+            include: [{ model: UserInfos, attributes: [] }],
+            raw: true,
           });
-          let image = user.Userinfos.profileUrl;
           socket.nickname = user.nickname;
-
-          if (!image) {
-            image = "https://d13uh5mnneeyhq.cloudfront.net/beethoven.png";
-          }
-          socket.emit("onUser", socket.nickname);
-          socket.to(socket.roomId).emit("onUser", socket.nickname, image);
+          socket.image = user.profileUrl;
+          const data = { nickname: socket.nickname, image: socket.image };
+          socket.emit("onUser", data);
+          socket.to(socket.roomId).emit("onUser", data);
         } catch (err) {
+          socket.emit("error", {
+            message: "엑세스 토큰이 만료되었습니다.",
+            code: 419,
+          });
           logger.error(err);
           socket.emit("onUser", err);
         }
       });
       socket.on("sendMessage", function (data) {
-        data.nickname = socket.nickname;
-        Chats.create({
-          roomId: socket.roomId,
-          nickname: socket.nickname,
-          message: data.message,
-        });
-        socket.emit("receiveMessage", data); // 상대방에게
-        socket.to(socket.roomId).emit("receiveMessage", data); // 나한테
+        try {
+          jwt.verify(data.token, process.env.ACCESS_SECRET_KEY);
+          data.nickname = socket.nickname;
+          Chats.create({
+            roomId: socket.roomId,
+            nickname: socket.nickname,
+            message: data.message,
+          });
+          socket.emit("receiveMessage", data); // 상대방한테
+          socket.to(socket.roomId).emit("receiveMessage", data); // 나한테
+        } catch (err) {
+          if (err instanceof jwt.TokenExpiredError) {
+            socket.emit("error", {
+              message: "엑세스 토큰이 만료되었습니다.",
+              code: 419,
+            });
+            logger.error(err);
+            socket.emit("onUser", err);
+          }
+        }
       });
       socket.on("disconnect", function () {
         socket.emit("offUser", socket.nickname);

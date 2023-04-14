@@ -58,6 +58,22 @@ class MusicRepository {
     });
     let music = await this.musicModel.findAll({
       where: { composer: composer.composer.split(" ").slice(-1) },
+      attributes: [
+        "musicTitle",
+        "musicContent",
+        "composer",
+        "musicUrl",
+        "musicId",
+        [Sequelize.fn("COUNT", Sequelize.col("Likes.musicId")), "likesCount"],
+      ],
+      include: [
+        {
+          model: Likes,
+          attributes: [],
+          duplicating: false,
+        },
+      ],
+      group: ["Musics.musicId"],
     });
     return { composerInfo, music };
   };
@@ -75,14 +91,20 @@ class MusicRepository {
     const mood = await this.musicModel.findOne({
       order: Sequelize.literal("rand()"),
       where: { status },
-      // include: [
-      //   {
-      //     model: Composers,
-      //     as: "Composer",
-      //     targetKey: "composer",
-      //     attributes: ["imageUrl"],
-      //   },
-      // ],
+      attributes: [
+        "musicId",
+        "musicTitle",
+        "musicContent",
+        "musicUrl",
+        "composer",
+        [Sequelize.col("Composer.imageUrl"), "imageUrl"],
+      ],
+      include: [
+        {
+          model: Composers,
+          attributes: [],
+        },
+      ],
     });
     return mood;
   };
@@ -108,7 +130,16 @@ class MusicRepository {
         "musicTitle",
         "musicContent",
         "musicUrl",
+        [Sequelize.fn("COUNT", Sequelize.col("Likes.musicId")), "likesCount"],
       ],
+      include: [
+        {
+          model: Likes,
+          attributes: [],
+          duplicating: false,
+        },
+      ],
+      group: ["Musics.musicId"],
     });
 
     const musicTitle = await this.musicModel.findAll({
@@ -122,6 +153,11 @@ class MusicRepository {
             },
           ],
           attributes: [],
+        },
+        {
+          model: Likes,
+          attributes: [],
+          duplicating: false,
         },
       ],
       order: [["musicTitle", "DESC"]],
@@ -137,7 +173,9 @@ class MusicRepository {
         "musicTitle",
         "musicContent",
         "musicUrl",
+        [Sequelize.fn("COUNT", Sequelize.col("Likes.musicId")), "likesCount"],
       ],
+      group: ["Musics.musicId"],
     });
     return { composerInfo, composerSong, musicTitle };
   };
@@ -150,12 +188,17 @@ class MusicRepository {
         "composer",
         "musicUrl",
         [Sequelize.fn("COUNT", Sequelize.col("Likes.musicId")), "likesCount"],
+        [Sequelize.col("Composer.imageUrl"), "imageUrl"],
       ],
       include: [
         {
           model: Likes,
           attributes: [],
           duplicating: false,
+        },
+        {
+          model: Composers,
+          attributes: [],
         },
       ],
       group: ["Musics.musicId"],
@@ -177,12 +220,17 @@ class MusicRepository {
           Sequelize.fn("COUNT", Sequelize.col("Streamings.musicId")),
           "streamingCount",
         ],
+        [Sequelize.col("Composer.imageUrl"), "imageUrl"],
       ],
       include: [
         {
           model: Streamings,
           attributes: [],
           duplicating: false,
+        },
+        {
+          model: Composers,
+          attributes: [],
         },
       ],
       group: ["Musics.musicId"],
