@@ -24,4 +24,35 @@ describe("LAP, Music Domain integration test", () => {
     });
     //response 의 body data 가 ({message:"~",music:null})과 동일한가?
   });
+  test("POST Music TEST", async () => {
+    const POSTBodyParams = {
+      musicTitle: "title",
+      musicContent: "content",
+      status: "4",
+      composer: "mozarts",
+      tag: "haapy",
+      fileName: "filename",
+    };
+    const response = await supertest(app)
+      .post(`/api/music`)
+      .query({})
+      .send(POSTBodyParams);
+    expect(response.status).toEqual(201);
+    expect(response.body).toMatchObject({
+      data: {
+        musicId: 1,
+        musicTitle: POSTBodyParams.musicTitle,
+        musicContent: POSTBodyParams.musicContent,
+        status: POSTBodyParams.status,
+        composer: POSTBodyParams.composer,
+        tag: POSTBodyParams.tag,
+        fileName: POSTBodyParams.fileName,
+        createdAt: expect.anything(),
+        updatedAt: expect.anything(),
+      },
+    });
+  });
+});
+afterAll(async () => {
+  await sequelize.sync({ force: true });
 });

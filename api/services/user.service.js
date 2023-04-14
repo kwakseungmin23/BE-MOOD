@@ -69,6 +69,7 @@ class UserService {
         code: 400,
       });
     }
+    const userInfo = await this.userRepository.userInfo(login.userId);
 
     const accessToken = jwt.sign(
       { userId: login.userId },
@@ -80,7 +81,12 @@ class UserService {
       process.env.REFRESH_SECRET_KEY,
       { expiresIn: "1d" }
     );
-    return { nickname: login.nickname, accessToken, refreshToken };
+    return {
+      nickname: login.nickname,
+      profileUrl: userInfo.profileUrl,
+      accessToken,
+      refreshToken,
+    };
   };
 
   idCheck = async (id) => {
@@ -169,19 +175,18 @@ class UserService {
     }
     const nickname = userData.nickname;
     const profile_image = userData.profile_image;
+    let user;
 
     const findUser = await this.userRepository.findByEmail(email);
-
     if (!findUser) {
-      await this.userRepository.autoSocialSignup(
+      user = await this.userRepository.autoSocialSignup(
         email,
         nickname,
         profile_image
       );
+    } else {
+      user = await this.userRepository.userInfo(findUser.userId);
     }
-
-    const user = await this.userRepository.findByEmail(email);
-
     const access_token = jwt.sign(
       {
         userId: user.userId,
@@ -201,11 +206,11 @@ class UserService {
         expiresIn: "1d",
       }
     );
-
     return {
       access_token: access_token,
       refresh_token: refresh_token,
       nickname: user.nickname,
+      profileUrl: user.profileUrl,
     };
   };
 
@@ -250,6 +255,23 @@ class UserService {
       musicCount: musicList.musicCount,
     };
   };
+  myList = async (userId) => {
+    const scrapList = await this.userRepository.scrapList(userId);
+    const musicId = [];
+    for (let i = 0; i < scrapList.length; i++) {
+      musicId.push(scrapList[i].musicId);
+    }
+    const musicList = await this.userRepository.findMyMusic(musicId);
+    for (let i = 0; i < musicList.musicList.length; i++) {
+      const musicId = musicList.musicList[i].dataValues.musicId;
+      const likeStatus = await this.likeRepository.findLike(userId, musicId);
+      musicList.musicList[i].dataValues.likeStatus = !!likeStatus;
+    }
+    return {
+      musicList: musicList.musicList
+    };
+  };
+
   reviewList = async (userId, page) => {
     const reviewData = await this.userRepository.findReview(userId);
     const recommentData = await this.userRepository.findRecomment(userId);
@@ -284,12 +306,11 @@ class UserService {
     return;
   };
 
-  deleteUser = async (userId, password) => {
-    const login = await this.userRepository.login(id);
-    const isPasswordCorrect = await bcrypt.compare(password, login.password);
-    if (!isPasswordCorrect) {
+  deleteUser = async (userId, email) => {
+    const login = await this.userRepository.findUser(userId);
+    if (login.email !== email) {
       throw new makeError({
-        message: "비밀번호가 일치하지 않습니다.",
+        message: "이메일을 확인하세요.",
         code: 400,
       });
     }
@@ -323,8 +344,36 @@ class UserService {
     if (user.nickname === nickname) {
       throw makeError({ message: "현재 닉네임과 같습니다.", code: 400 });
     }
-    await this.userRepository.changeNickname(userId, nickname);
+    const sameNickname = await this.userRepository.findByNickname(nickname);
+    if (sameNickname) {
+      throw makeError({ message: "중복된 닉네임이 있습니다.", code: 400 });
+    }
+    await this.userRepository.changeNickname({
+      userId,
+      nickname,
+      beforeNickname: user.nickname,
+    });
     return;
+  };
+  savePassword = async ({ email, password }) => {
+    const hashedPw = await bcrypt.hash(
+      String(password),
+      Number(process.env.HASH_KEY)
+    );
+    await this.userRepository.savePassword({ email, hashedPw });
+    return;
+  };
+  mailCheck = async ({ email, password }) => {
+    const check = await this.userRepository.mailCheck({ email });
+    const isPasswordCorrect = await bcrypt.compare(password, check.password);
+    if (isPasswordCorrect) {
+      return { message: "이메일 인증이 확인되었습니다." };
+    } else {
+      throw new makeError({
+        message: "이메일 인증에 실패하였습니다.",
+        code: 401,
+      });
+    }
   };
 }
 

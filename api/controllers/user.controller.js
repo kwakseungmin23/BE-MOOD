@@ -29,13 +29,14 @@ class UserController {
     const { id, password } = req.body;
     try {
       const user = await this.userService.login(id, password);
-      const { nickname, accessToken, refreshToken } = user;
+      const { nickname, profileUrl, accessToken, refreshToken } = user;
 
       res.status(200).json({
         message: "로그인에 성공하였습니다.",
         accessToken,
         refreshToken,
         nickname,
+        profileUrl,
       });
     } catch (error) {
       next(error);
@@ -63,14 +64,14 @@ class UserController {
       const { code } = req.body;
       const authToken = await this.userService.getKakaoTokens(code);
       const userData = await this.userService.getUserInfo(authToken);
-      const { access_token, refresh_token, nickname } =
+      const { access_token, refresh_token, nickname, profileUrl } =
         await this.userService.makeTokenAndUserInfo(userData);
-
-      res.status(200).send({
+      res.status(200).json({
         message: "카카오 로그인 성공",
         access_token: access_token,
         refresh_token: refresh_token,
         nickname,
+        profileUrl,
       });
     } catch (error) {
       next(error);
@@ -119,6 +120,18 @@ class UserController {
       next(error);
     }
   };
+  myList = async (req, res, next) => {
+    try {
+      const { userId } = res.locals.user;
+      const myList = await this.userService.myList(userId);
+      res.status(200).json({
+        message: "사용자가 스크랩한 음악조회를 성공했습니다.",
+        myList,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 
   reviewList = async (req, res, next) => {
     try {
@@ -150,6 +163,11 @@ class UserController {
           .status(400)
           .json({ massage: "이미지 파일 형식만 업로드 가능합니다." });
       }
+      if (file.size > 5 * 1024 * 1024) {
+        res
+          .status(400)
+          .json({ message: "파일 크기는 5MB를 초과할 수 없습니다." });
+      }
       const data = await this.userService.uploadImage(file);
 
       const fileName = "https://d13uh5mnneeyhq.cloudfront.net/" + data.Key;
@@ -163,8 +181,8 @@ class UserController {
   deleteUser = async (req, res, next) => {
     try {
       const { userId } = res.locals.user;
-      const { password } = req.body;
-      await this.userService.deleteUser(userId, password);
+      const { email } = req.body;
+      await this.userService.deleteUser(userId, email);
       res.status(200).json({ message: "회원탈퇴에 성공하였습니다" });
     } catch (error) {
       next(error);
@@ -214,10 +232,11 @@ class UserController {
       next(error);
     }
   };
-  mailCheck = async (req, res, next) => {
+  mailSavePassword = async (req, res, next) => {
     try {
       const { email } = req.body;
       const password = Math.floor(Math.random() * 1000000); // 6자리 랜덤한 비밀번호 생성
+      await this.userService.savePassword({ email, password });
       let mailOptions = {
         from: "MoodClassic99@gmail.com", //송신할 이메일
         to: email, //수신할 이메일
@@ -225,21 +244,23 @@ class UserController {
         html: `
          <div>
              <h2>Mood Code</h2>
-             <div class="phone" style="font-size: 1.1em;">Title : "코드를 Mood 홈페이지에 입력하세요."</div>
+             <div class="phone" style="font-size: 1.1em;"> "코드를 Mood 홈페이지에 입력하세요."</div>
              <div class="message" style="font-size: 1.1em;">message : ${password}</div>
          </div>
          `,
       };
-      await transporter.sendMail(mailOptions, function (error, info) {
-        if (error) {
-          console.log(error);
-        } else {
-          console.log("Email sent: " + info.response);
-        }
-      });
-      return res.json({ message: "성공적", password: password }); // 비밀번호를 res에 담아 보내줍니다.
+      await transporter.sendMail(mailOptions);
+      return res.json({ message: "이메일 전송 완료" }); // 비밀번호를 res에 담아 보내줍니다.
     } catch (err) {
-      console.error(err);
+      next(err);
+    }
+  };
+  mailCheck = async (req, res, next) => {
+    try {
+      const { email, password } = req.body;
+      const check = await this.userService.mailCheck({ email, password })
+      return res.json({ check })
+    } catch (err) {
       next(err);
     }
   };

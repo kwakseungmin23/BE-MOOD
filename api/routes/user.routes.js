@@ -16,6 +16,7 @@ router.post("/user/refresh", userController.refresh);
 router.get("/user/userinfo", authMiddleWare, userController.userInfo);
 router.get("/user/likelist", authMiddleWare, userController.likeList);
 router.get("/user/scraplist", authMiddleWare, userController.scrapList);
+router.get("/user/mylist", authMiddleWare, userController.myList);
 router.get("/user/reviewlist", authMiddleWare, userController.reviewList);
 router.patch(
   "/user/uploadprofile",
@@ -25,10 +26,24 @@ router.patch(
 );
 router.patch(
   "/user/changenickname",
+  validationMiddleWare.nicknameCheck,
   authMiddleWare,
   userController.changeNickname
 );
-router.delete("/user/delete", authMiddleWare, userController.deleteUser);
-router.get("/user/email", userController.mailCheck);
+router.delete(
+  "/user/delete",
+  validationMiddleWare.emailCheck,
+  authMiddleWare,
+  userController.deleteUser
+);
+router.post(
+  "/user/email",
+  validationMiddleWare.emailCheck,
+  userController.mailSavePassword
+);
+router.post(
+  "/user/emailCheck",
+  userController.mailCheck
+);
 
 module.exports = router;

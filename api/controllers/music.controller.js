@@ -1,10 +1,10 @@
 const musicService = require("../services/music.service");
-const musicRepository = require("../repositories/music.repository");
+const MusicRepository = require("../repositories/music.repository");
 
 class MusicController {
   constructor() {
     this.musicService = new musicService();
-    this.musicRepository = new musicRepository();
+    this.musicRepository = new MusicRepository();
   } //test
   create = async (req, res) => {
     try {

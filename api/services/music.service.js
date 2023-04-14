@@ -35,7 +35,7 @@ class MusicService {
     fileName,
   }) => {
     const musicUrl = "https://d13uh5mnneeyhq.cloudfront.net/" + fileName;
-    const music = await musicRepository.create({
+    const music = await this.musicRepository.create({
       musicTitle,
       musicContent,
       status,

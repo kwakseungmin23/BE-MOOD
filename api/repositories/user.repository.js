@@ -3,6 +3,7 @@ const {
   UserInfos,
   Likes,
   Scraps,
+  Chats,
   Musics,
   Reviews,
   ReComments,
@@ -14,6 +15,8 @@ class UserRepository {
     const makeUser = await Users.create({ id, password, email, nickname });
     await UserInfos.create({
       userId: makeUser.userId,
+      profileUrl:
+        "https://d13uh5mnneeyhq.cloudfront.net/Heart_fill_white copy.png",
     });
     return makeUser;
   };
@@ -73,10 +76,10 @@ class UserRepository {
     });
 
     return {
-      user_id: auto_signup_kakao_user.user_id,
+      userId: auto_signup_kakao_user.user_id,
       email: auto_signup_kakao_user.email,
       nickname: auto_signup_kakao_user.nickname,
-      profile_image: auto_signup_kakao_user_image.src,
+      profileUrl: auto_signup_kakao_user_image.profileUrl,
     };
   };
 
@@ -120,13 +123,45 @@ class UserRepository {
     return { musicList, musicCount };
   };
 
+  findMyMusic = async (musicId) => {
+    const musicList = await Musics.findAll({
+      where: { musicId },
+      attributes: [
+        "musicTitle",
+        "musicContent",
+        "composer",
+        "musicUrl",
+        "musicId",
+      ],
+      order: [["musicId", "DESC"]],
+    });
+    const musicCount = await Musics.count({ where: { musicId } });
+    return { musicList, musicCount };
+  };
+
+  myMusic = async (musicId) => {
+    const musicList = await Musics.findAll({
+      where: { musicId },
+      attributes: [
+        "musicTitle",
+        "musicContent",
+        "composer",
+        "musicUrl",
+        "musicId",
+      ],
+      order: [["musicId", "DESC"]],
+    });
+    return musicList;
+  };
+
   uploadProfile = async (userId, fileName) => {
     await UserInfos.update({ profileUrl: fileName }, { where: { userId } });
     return;
   };
 
-  changeNickname = async (userId, nickname) => {
+  changeNickname = async ({ userId, nickname, beforeNickname }) => {
     await Users.update({ nickname }, { where: { userId } });
+    await Chats.update({ nickname }, { where: { nickname: beforeNickname } });
     return;
   };
 
@@ -170,6 +205,15 @@ class UserRepository {
   updateUserStatus = async (userId, message) => {
     await UserInfos.update({ myStatus: message }, { where: { userId } });
     return;
+  };
+  savePassword = async ({ email, hashedPw }) => {
+    await EmailChecks.destroy({ where: { email } });
+    await EmailChecks.create({ email, password: hashedPw });
+    return;
+  };
+  mailCheck = async ({ email }) => {
+    const check = await EmailChecks.findOne({ where: { email } });
+    return check;
   };
 }
 

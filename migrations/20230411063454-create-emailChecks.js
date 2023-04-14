@@ -2,30 +2,20 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("Streamings", {
-      streamingId: {
+    await queryInterface.createTable("EmailChecks", {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      userId: {
+      email: {
+        type: Sequelize.STRING,
         allowNull: false,
-        type: Sequelize.INTEGER,
-        references: {
-          model: "Users",
-          key: "userId",
-        },
-        onDelete: "CASCADE",
       },
-      musicId: {
+      password: {
+        type: Sequelize.STRING,
         allowNull: false,
-        type: Sequelize.INTEGER,
-        references: {
-          model: "Musics",
-          key: "musicId",
-        },
-        onDelete: "CASCADE",
       },
       createdAt: {
         allowNull: false,
@@ -40,6 +30,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("Streamings");
+    await queryInterface.dropTable("EmailChecks");
   },
 };
