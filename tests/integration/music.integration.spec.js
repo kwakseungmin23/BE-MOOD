@@ -8,7 +8,7 @@ const { sequelize } = require("../../models");
 beforeAll(async () => {
   await sequelize.sync(); // 테스트 하기 전 Database 초기화
 });
-
+//t
 describe("LAP, Music Domain integration test", () => {
   test("GET Api Test", async () => {
     const [x, y] = [1, 1];
