@@ -1,7 +1,6 @@
 const MusicRepository = require("../repositories/music.repository");
 const LikeRepository = require("../repositories/like.repository");
 const ScrapRepository = require("../repositories/scrap.repository");
-const UserRepository = require("../repositories/user.repository");
 const ComposerRepository = require("../repositories/composer.repository");
 const { makeError } = require("../error");
 const {
@@ -12,7 +11,7 @@ const {
   Tags,
   MusicTags,
   Scraps,
-} = require("../../db/models");
+} = require("../../models");
 
 class MusicService {
   musicRepository = new MusicRepository(

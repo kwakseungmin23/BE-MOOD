@@ -1,5 +1,5 @@
 const { Server } = require("socket.io");
-const { Users, UserInfos, Chats } = require("./db/models");
+const { Users, UserInfos, Chats } = require("./models");
 const Sequelize = require("sequelize");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();

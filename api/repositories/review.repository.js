@@ -1,4 +1,4 @@
-const { Users, Reviews } = require("../../db/models/");
+const { Users, Reviews } = require("../../models/");
 
 class ReviewRepository {
   constructor() {}

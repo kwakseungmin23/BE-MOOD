@@ -6,7 +6,7 @@ const {
   Musics,
   Reviews,
   ReComments,
-} = require("../../db/models");
+} = require("../../models");
 const sequelize = require("sequelize");
 
 class UserRepository {

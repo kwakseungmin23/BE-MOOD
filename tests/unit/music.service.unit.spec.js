@@ -1,7 +1,7 @@
 const MusicService = require("../../api/services/music.service");
 //우리는 테스트 코드를 작성하기 위하여 MusicService 클래스가 필요합니다.
 //그래야지 MusicService 클래스 안의 객체들을 활용할 수 있습니다.
-const { sequelize } = require("../../db/models/index");
+const { sequelize } = require("../../models/");
 //MusicService 안의 코드들을 보면, sequelize-cli 를 통해서 database 의 모델들을 불러오고 있죠?
 //테스트 코드 환경에서도 실제 코드가 돌아가는 환경처럼 구현해주어야 합니다.
 //따라서 우리는 sequelize orm 을 mocking하고, sequelize 와 연동된 database 를 가짜로 생성해야 합니다.

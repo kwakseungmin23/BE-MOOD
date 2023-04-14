@@ -52,7 +52,6 @@ app.use("/api", router);
 
 app.use((error, req, res, next) => {
   logger.error(error);
-  console.error(error);
   return res
     .status(error.code || 500)
     .json({ message: error.message || "서버 에러." });
@@ -64,3 +63,5 @@ createSocket(server);
 server.listen(PORT, () => {
   logger.info(`${process.env.NODE_ENV} - API Server Listening At Port ${PORT}`);
 });
+
+module.exports = app;

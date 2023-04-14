@@ -97,14 +97,14 @@ class MusicRepository {
         "musicContent",
         "musicUrl",
         "composer",
-        [Sequelize.col("Composer.imageUrl"), "imageUrl"],
+        // [Sequelize.col("Composer.imageUrl"), "imageUrl"],
       ],
-      include: [
-        {
-          model: Composers,
-          attributes: [],
-        },
-      ],
+      // include: [
+      //   {
+      //     model: Composers,
+      //     attributes: [],
+      //   },
+      // ],
     });
     return mood;
   };
