@@ -4,7 +4,7 @@ const app = require("../../app");
 //app.js module화 가져오기.
 
 describe("LAP, Music Domain integration test", () => {
-  test("GET Api Test", async () => {
+  test("music:x:y GET Api Test", async () => {
     const [x, y] = [1, 1];
     const response = await supertest(app)
       .get(`/api/music/mood/${x}/${y}`) // GET Method URL
@@ -55,5 +55,22 @@ describe("LAP, Music Domain integration test", () => {
           },
         });
       });
+  });
+  test("MUSIC GET API TEST", async () => {
+    const musicId = 1;
+    const req = supertest(app);
+    await req.get(`/api/music/${musicId}`).then((res) => {
+      expect(res.status).toEqual(200);
+      // console.log(req, res);
+      expect(res.body).toMatchObject({
+        data: {
+          musicTitle: "title",
+          musicContent: "content",
+          composer: "mozart",
+          musicUrl: "https://d13uh5mnneeyhq.cloudfront.net/picture.jpg",
+          musicId: 1,
+        },
+      });
+    });
   });
 });
