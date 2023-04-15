@@ -45,7 +45,7 @@ class MusicService {
     const musicId = music.musicId;
     const tagList = tag.split(",");
     for (const tag of tagList) {
-      await musicRepository.createTag({ musicId, tag });
+      await this.musicRepository.createTag({ musicId, tag });
     }
     return music;
   };

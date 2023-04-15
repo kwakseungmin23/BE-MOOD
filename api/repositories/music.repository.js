@@ -34,7 +34,7 @@ class MusicRepository {
     const tags = await this.tagModel.findOrCreate({
       where: { tagName: tag.trim() },
     });
-    await MusicTags.create({
+    await this.musicTagModel.create({
       musicId,
       tagId: tags[0].tagId,
     });

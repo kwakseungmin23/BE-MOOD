@@ -4,10 +4,9 @@ const app = require("../../app");
 //app.js module 가져오기.
 const { sequelize } = require("../../models");
 //sequelize orm 가져오기
-
-beforeAll(async () => {
-  await sequelize.sync(); // 테스트 하기 전 Database 초기화
-});
+// beforeAll(async () => {
+//   await sequelize.sync(); // 테스트 하기 전 Database 초기화
+// });
 //t
 describe("LAP, Music Domain integration test", () => {
   test("GET Api Test", async () => {
@@ -28,31 +27,36 @@ describe("LAP, Music Domain integration test", () => {
     const POSTBodyParams = {
       musicTitle: "title",
       musicContent: "content",
-      status: "4",
-      composer: "mozarts",
-      tag: "haapy",
-      fileName: "filename",
+      status: "happy",
+      composer: "mozart",
+      tag: "happy",
+      fileName: "fileName",
     };
-    const response = await supertest(app)
+    await supertest(app)
       .post(`/api/music`)
-      .query({})
-      .send(POSTBodyParams);
-    expect(response.status).toEqual(201);
-    expect(response.body).toMatchObject({
-      data: {
-        musicId: 1,
-        musicTitle: POSTBodyParams.musicTitle,
-        musicContent: POSTBodyParams.musicContent,
-        status: POSTBodyParams.status,
-        composer: POSTBodyParams.composer,
-        tag: POSTBodyParams.tag,
-        fileName: POSTBodyParams.fileName,
-        createdAt: expect.anything(),
-        updatedAt: expect.anything(),
-      },
-    });
+      .attach("picture.jpg", `${__dirname}/picture.jpg`)
+      .field("musicTitle", "title")
+      .field("musicContent", "content")
+      .field("status", "happy")
+      .field("composer", "mozart")
+      .field("tag", "happy")
+      .field("musicUrl", "https://d13uh5mnneeyhq.cloudfront.net/picture.jpg")
+      .then((response) => {
+        expect(response.status).toEqual(200);
+        expect(response.body).toMatchObject({
+          msg: "생성 완료",
+          music: {
+            musicId: expect.anything(), // pk autoincrement
+            musicTitle: POSTBodyParams.musicTitle,
+            musicContent: POSTBodyParams.musicContent,
+            status: POSTBodyParams.status,
+            composer: POSTBodyParams.composer,
+            musicUrl: "https://d13uh5mnneeyhq.cloudfront.net/picture.jpg",
+          },
+        });
+      });
   });
 });
-afterAll(async () => {
-  await sequelize.sync({ force: true });
-});
+// afterAll(async () => {
+//   await sequelize.sync({ force: true });
+// });
