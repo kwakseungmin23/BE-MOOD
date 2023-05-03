@@ -1,4 +1,4 @@
-# 사이트 폐쇄 2023/05/03
+# ☠️ 사이트 폐쇄 2023/05/03 ☠️
 
 # 👉[MOOD-CLASSIC WEB SITE][mood-link]
 
