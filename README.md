@@ -1,6 +1,6 @@
-# 👉[MOOD-CLASSIC WEB SITE][mood-link]
+# 사이트 폐쇄 2023/05/03
 
-<span style = "color red"># 사이트 폐쇄 2023/05/03</span>
+# 👉[MOOD-CLASSIC WEB SITE][mood-link]
 
 [mood-link]: https://fe-mood.vercel.app/ 'Mood 바로가기'
 
