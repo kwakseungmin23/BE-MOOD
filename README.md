@@ -1,8 +1,5 @@
 # ☠️ 사이트 폐쇄 2023/05/03 ☠️
 
-# 👉[MOOD-CLASSIC WEB SITE][mood-link]
-
-[mood-link]: https://fe-mood.vercel.app/ 'Mood 바로가기'
 
 #### 클래식 음악을 통한 감정적인 치유와 공감을 드립니다.
 
